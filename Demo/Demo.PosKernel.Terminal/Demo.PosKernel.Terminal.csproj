@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Client\PosKernel.Client.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Core\PosKernel.Core.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Abstractions\PosKernel.Abstractions.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Extensions.Core\PosKernel.Extensions.Core.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Extensions.Configuration\PosKernel.Extensions.Configuration.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Extensions.FoodService\PosKernel.Extensions.FoodService.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.9" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Removed direct XferLang dependency; now provided through PosKernel.Extensions.Configuration -->
+
+</Project>

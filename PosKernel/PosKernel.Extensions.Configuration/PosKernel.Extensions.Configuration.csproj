@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Store extension configuration implementations (XferLang parsing, validation)</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PosKernel.Extensions.Core\PosKernel.Extensions.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ParksComputing.Xfer.Lang" Version="0.15.25-prerelease" />
+  </ItemGroup>
+</Project>

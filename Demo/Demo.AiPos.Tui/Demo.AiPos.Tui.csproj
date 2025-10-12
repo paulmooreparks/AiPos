@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- WARNING POLICY EXCEPTION (NU1608): Terminal.Gui 2.0.0 constrains System.Text.Json < 9.0.0.
+         Solution standardizes on 9.0.9; serialization here is UI-only (no persistence/business rules).
+         Suppress NU1608 locally until upstream relaxes constraint. -->
+    <NoWarn>$(NoWarn);NU1608</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AiPos\AiPos.Core\AiPos.Core.csproj" />
+    <ProjectReference Include="..\..\AiPos\AiPos.Orchestrator\AiPos.Orchestrator.csproj" />
+    <ProjectReference Include="..\..\AiPos\AiPos.Agentic\AiPos.Agentic.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Client\PosKernel.Client.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Core\PosKernel.Core.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Extensions.Core\PosKernel.Extensions.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Terminal.Gui" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.9" />
+  </ItemGroup>
+
+</Project>

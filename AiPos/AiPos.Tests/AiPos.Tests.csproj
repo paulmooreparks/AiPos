@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest" Version="3.6.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AiPos.Core\AiPos.Core.csproj" />
+    <ProjectReference Include="..\AiPos.Orchestrator\AiPos.Orchestrator.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Client\PosKernel.Client.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Core\PosKernel.Core.csproj" />
+    <ProjectReference Include="..\..\PosKernel\PosKernel.Extensions.Core\PosKernel.Extensions.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+</Project>

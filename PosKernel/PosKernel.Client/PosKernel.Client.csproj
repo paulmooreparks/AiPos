@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\PosKernel.Core\PosKernel.Core.csproj" />
+    <ProjectReference Include="..\PosKernel.Extensions.Core\PosKernel.Extensions.Core.csproj" />
+    <ProjectReference Include="..\PosKernel.Abstractions\PosKernel.Abstractions.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+     <TargetFramework>net9.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+     <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

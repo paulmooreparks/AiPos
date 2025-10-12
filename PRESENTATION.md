@@ -14,7 +14,7 @@
 **Core Value Proposition:** AI orchestration layer that handles natural language customer interactions while maintaining transaction integrity and cultural adaptability.
 
 #### Key Capabilities:
-- **AI Orchestration**: Single-call pattern for predictable performance and reliable operation
+- **Governed AI Execution**: Predictable, bounded decision cycle delivering stable response time, enforced safety controls, full auditability, and cost discipline (prevents runaway interactions)
 - **Cultural Intelligence**: Support diverse customer languages and ordering patterns through store extensions
 - **Anti-Hallucination Safety**: Fail-fast architecture preventing AI from creating non-existent products
 - **Infrastructure Integration**: Designed to work with existing transaction systems
@@ -28,9 +28,9 @@
 ```mermaid
 graph TB
     A[Customer Natural Language] --> B[AI Orchestration Layer]
-    B --> C[Store Extension Logic]
-    C --> D[Transaction Kernel]
-    D --> E[Existing POS Integration]
+    B --> C[Store Abstraction Logic]
+    C --> D[POS Processing Core]
+    D --> E[Existing POS or Commerce Systems]
 ```
 
 ---
@@ -43,53 +43,39 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "AiPos Layer (AI Intelligence)"
+    subgraph AIL[AI Layer]
+        direction LR
         A[AI Orchestrator]
         B[Agentic Interface]
         C[Tool Execution Framework]
         D[Safety Controls]
     end
 
-    subgraph "Store Extensions Layer"
+    subgraph SEL[Store Extensions Layer]
+        direction LR
         E[Store Extension A]
         F[Store Extension B]
         G[Culture-Neutral Interfaces]
     end
 
-    subgraph "PosKernel Layer"
-        H[Transaction Engine]
-        I[Session Management]
-        J[Currency Abstraction]
-        K[Audit Trail]
+    subgraph POS[POS Layer]
     end
 
-    subgraph "Integration Points"
-        L[Direct Call API]
-        M[Named Pipe IPC]
-        N[REST/gRPC]
-    end
+    A -.- B
+    B -.- C
+    C -.- D
 
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
-    J --> K
+    E -.- F
+    F -.- G
 
-    H --> L
-    H --> M
-    H --> N
+    AIL --> SEL
+    SEL --> POS
 ```
 
 ### Key Architectural Principles:
-- **Layer Independence**: Each layer can be replaced without affecting others
-- **Culture-Neutral Core**: Transaction kernel knows nothing about business rules or currencies
-- **Fail-Fast Design**: Missing configuration causes immediate failure, never silent defaults
-- **AI Orchestration**: Single-call pattern for predictable performance
+- **Layer Independence**: Swap or evolve layers without ripple effects
+- **Culture-Neutral Core**: POS processing stays free of currency & local business rule assumptions
+- **Fail-Fast Design**: Missing configuration triggers immediate, explicit errors (no silent defaults)
 
 ---
 
@@ -151,6 +137,7 @@ sequenceDiagram
 ```mermaid
 graph TB
     subgraph "Agentic Interface"
+        P[Prompt Orchestration]
         A[Tool Selection Logic]
         B[Context Management]
         C[Response Generation]
@@ -170,6 +157,8 @@ graph TB
         K[Custom Business Logic]
     end
 
+    P --> A
+    P --> B
     A --> B
     B --> C
     C --> D
@@ -184,10 +173,32 @@ graph TB
 ```
 
 #### AI Orchestration Benefits:
-- **Single-Call Pattern**: Predictable performance with deterministic timing
 - **Unified Interface**: All operations through consistent agentic protocol
 - **Tool Extensibility**: Add new capabilities without AI model retraining
 - **Safety Controls**: Built-in validation and fail-fast error handling
+
+#### Prompt Architecture & Governance
+Purpose-built prompt layering ensures predictable AI behavior, cultural adaptability, and verifiable safety.
+
+Key Layers (merged at runtime):
+- **System Guardrails**: Non-negotiable safety + tool-only execution directives (no free-form speculation)
+- **Role & Tone**: Conversation style (e.g., friendly concise cashier) separated from policy rules
+- **Store Context Overlay**: Dynamic product lexicon, cultural phrases, restricted items, pricing semantics
+- **Conversation State Injection**: Recent validated turns (bounded window) – never raw unvalidated model output
+- **Tool & Schema Guidance**: Explicit JSON / argument contracts; mandates using provided tools for all state changes
+- **Safety Assertions**: Hard instructions forbidding price invention, currency assumptions, or product creation
+
+Governance & Control:
+- **Versioned Templates**: Every prompt bundle has semantic version + content hash recorded in audit logs
+- **Store-Specific Extensions**: Supply only localized overlays; cannot override core safety guardrails
+- **Change Review Path**: Experimental prompt tweaks evaluated offline against regression test corpus before promotion
+- **Observability**: Each interaction stores (prompt_set_version, hash, tool_calls, validation_results) for traceability
+- **Optimization Loop**: Captured conversations → structured feedback → targeted prompt diff → re-test → controlled release
+
+Benefits:
+- **Deterministic Boundaries**: Clear separation between invariant safety language and adaptive store overlays
+- **Rapid Localization**: Add or adjust store phrasing without risking core safety integrity
+- **Auditable Evolution**: Every production change traceable to reviewed prompt diff
 
 ---
 
@@ -201,41 +212,41 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "Layer 1: AI Orchestrator Safety"
-        A[Single-Call Pattern]
+    subgraph L1[AI Orchestrator Safety]
+        A[Governed Decision Cycle]
         B[Tool-Only Responses]
         C[Mandatory Validation]
     end
 
-    subgraph "Layer 2: Store Extension Validation"
+    subgraph L2[Store Validation]
         D[Product Existence Checks]
         E[Price Validation]
         F[Business Rule Enforcement]
     end
 
-    subgraph "Layer 3: Kernel-Level Safeguards"
+    subgraph L3[POS Safeguards]
         G[Transaction Integrity]
         H[Audit Trail Logging]
         I[Fail-Fast Error Handling]
     end
 
-    J[Customer Request] --> A
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
+    J[Customer Request] --> L1
 
-    K[DESIGN DEFICIENCY: Clear Error Messages] -.-> A
-    K -.-> D
-    K -.-> G
+    A -.- B
+    B -.- C
+
+    D -.- E
+    E -.- F
+
+    G -.- H
+    H -.- I
+
+    L1 -.- L2
+    L2 -.- L3
 ```
 
 #### Safety Implementation:
-- **AI Orchestrator**: Single-call pattern eliminates multi-step reasoning errors
+- **AI Orchestrator**: Governed decision cycle eliminates uncontrolled multi-step drift
 - **Store Extensions**: All product and pricing logic validated by business-specific code
 - **Kernel Protection**: Transaction engine only accepts validated, structured data
 - **No Silent Defaults**: System fails immediately when invalid data detected
@@ -258,42 +269,42 @@ Result: Simplified ordering, increased average transaction value
 ```
 
 #### Use Case 2: Cultural Communication Adaptation
-**Scenario:** Store extension handles diverse customer communication styles
+**Scenario:** AI layer interprets diverse customer communication styles using store-provided catalogs & metadata (extensions are passive data/services, not reasoning agents)
 
 ```
 Direct Style: "I want a burger combo"
-→ Store Extension: Maps to appropriate combo product
+→ AI Orchestrator: Interprets intent → queries catalog → selects matching combo
 
 Conversational Style: "What's good here? Something filling..."
-→ Store Extension: Suggests popular filling options based on store data
+→ AI Orchestrator: Infers need (hearty meal) → retrieves popular/high-satiety items via extension data → proposes option
 
 Cultural Terms: "One kopi c kosong" (Singapore coffee terminology)
-→ Store Extension: Translates to appropriate product in local catalog
+→ AI Orchestrator: Parses cultural phrase using mapped lexicon from extension → resolves to product + modifiers
 ```
 
 #### Use Case 3: Business Rule Enforcement
-**Scenario:** Different stores have different policies handled by extensions
+**Scenario:** Policies differ by store; AI enforces them by consulting extension-provided rules
 
 ```
 Free Modifications Store: "Extra sauce on that burger"
-→ Extension: Adds modification at no charge
+→ AI Orchestrator: Validates modifier → extension pricing rule = free → adds at zero cost
 
 Premium Store: "Can I get that with extra sauce?"
-→ Extension: Adds modification with appropriate upcharge
+→ AI Orchestrator: Validates modifier → extension pricing rule = surcharge → adds with upcharge
 
-Result: Same AI orchestrator, different business outcomes
+Result: Same AI logic, policy variance comes from extension configuration/services
 ```
 
 ```mermaid
 graph LR
     A[Customer Input] --> B[AI Orchestrator]
-    B --> C[Store Extension Logic]
-    C --> D[Culture-Specific Response]
+    B --> C[Intention Parsing & Policy Application]
+    C --> D[Culture-Aware Response]
 
-    subgraph "Store Extensions"
-        E[Food Service Extension]
-        F[Retail Extension]
-        G[Custom Business Logic]
+    subgraph "Store Extensions (Data & Rules)"
+        E[Catalog & Lexicon]
+        F[Pricing / Modifier Rules]
+        G[Localization Metadata]
     end
 
     C --> E
@@ -309,47 +320,11 @@ graph LR
 
 ---
 
-## Slide 7: Store Extension Examples
-
-### Demonstrable Cultural and Business Adaptability
-
-#### Demo Implementation: Food Service Vertical
-
-**Singapore Kopitiam Style (Toast Boleh)**
-```json
-{
-  "storeType": "SingaporeanKopitiam",
-  "currency": "SGD",
-  "culture": "en-SG",
-  "supportedLanguages": ["en-SG", "zh-CN", "ms-MY", "ta-IN"],
-  "businessRules": {
-    "modificationPricing": "free",
-    "tipCulture": false,
-    "taxInclusive": true
-  }
-}
-```
-
-**American Coffee Shop Style (Star Grounds)**
-```json
-{
-  "storeType": "AmericanCoffeeShop",
-  "currency": "USD",
-  "culture": "en-US",
-  "supportedLanguages": ["en-US", "es-MX", "fr-CA"],
-  "businessRules": {
-    "modificationPricing": "charged",
-    "tipCulture": true,
-    "taxInclusive": false
-  }
-}
-```
-
 #### Architecture Benefits:
-- **Same AI Orchestrator**: Identical AI logic handles both store types
-- **Different Business Logic**: Store extensions enforce appropriate rules
-- **Cultural Intelligence**: Language and communication patterns adapted per store
-- **Operational Consistency**: Same training and maintenance across different business models
+- **Single AI Logic**: One orchestrator interprets intent & applies policies across store types
+- **Config-Driven Policy**: Store extensions supply data/rules; they do not perform reasoning
+- **Cultural Adaptation**: Local lexicon & product metadata shape AI responses without code fork
+- **Operational Consistency**: Central AI behavior + decentralized rule data = easier maintenance
 
 #### Scalability Pattern:
 ```mermaid
@@ -374,60 +349,29 @@ graph TB
 
 ### Deployment Architecture & Integration Approach
 
-#### Deployment Strategy
-
-**Separate Service Architecture:**
-- **`~/.aipos/`**: AI models, prompts, training data, agentic configurations
-- **`~/.poskernel/`**: Transaction kernel, store configurations, audit trails
-
-**Installation & Updates:**
-```powershell
-install-aipos.ps1        # Install/update AI orchestration layer
-install-poskernel.ps1    # Install/update transaction kernel
-install-demo.ps1         # Install/update store extension examples
-```
-
 #### Integration Phases
 
-**Phase 1: Architecture Foundation (Month 1-2)**
-- Deploy core AiPos and PosKernel layers
+**Phase 1: Architecture Foundation**
+- Deploy core AI and POS integration layers
 - Implement store extension framework
 - Establish safety controls and fail-fast mechanisms
 
-**Phase 2: Store Extension Development (Month 3-4)**
+**Phase 2: Store Extension Development**
 - Develop business-specific store extensions
 - Implement cultural intelligence for target markets
 - Validate anti-hallucination safety systems
 
-**Phase 3: Production Deployment (Month 5-6)**
+**Phase 3: Production Deployment**
 - Deploy to production environment
 - Integrate with existing infrastructure via standard APIs
 - Monitor performance and safety metrics
 
-```mermaid
-gantt
-    title Implementation Timeline
-    dateFormat  YYYY-MM-DD
-    section Foundation
-    Core Architecture    :arch1, 2024-01-01, 2024-02-28
-    Safety Systems      :safe1, 2024-01-15, 2024-03-15
-
-    section Extensions
-    Store Development   :store1, 2024-03-01, 2024-04-30
-    Cultural Intelligence :cult1, 2024-03-15, 2024-04-30
-
-    section Production
-    Integration Testing :test1, 2024-05-01, 2024-05-31
-    Production Deployment :prod1, 2024-06-01, 2024-06-30
-```
-
 #### Expected Business Outcomes:
 
 **Operational Benefits:**
-- **Predictable Performance**: Single-call AI pattern eliminates processing variability
+- **Safety & Performance Predictability**: Bounded decision cycle + fail-fast design eliminate variability and hidden risk
 - **Cultural Adaptability**: Store extensions handle diverse business requirements
 - **Reduced Training Complexity**: Staff focus on service while AI handles interaction complexity
-- **Safety Assurance**: Fail-fast architecture prevents costly AI errors
 
 **Technical Advantages:**
 - **Layer Independence**: Replace or upgrade components without system-wide impact
@@ -440,10 +384,11 @@ gantt
 ## Appendix: Technical Implementation Details
 
 ### Architecture Components
-- **AI Orchestrator**: Single-call pattern for predictable performance
+- **AI Orchestrator**: Governed, bounded decision cycle for predictable performance, safety, and auditability
 - **Agentic Interface**: Unified tool execution framework
+- **Prompt Orchestration**: Layered, versioned prompt assembly (guardrails → role/tone → store overlays → state) with audit hashes
 - **Store Extensions**: Culture-neutral interfaces with business-specific implementations
-- **Transaction Kernel**: Culture-agnostic transaction processing
+- **POS Processing Core**: Culture-agnostic transaction processing layer
 
 ### Integration Capabilities
 - **Direct Call API**: In-process integration for maximum performance

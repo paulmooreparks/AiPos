@@ -63,7 +63,7 @@ private string FormatCurrency(decimal amount)
     if (_currencyFormatter == null || _storeConfig == null)
     {
         throw new InvalidOperationException(
-            "DESIGN DEFICIENCY: Currency formatting service not available. " +
+            "Currency formatting service not available. " +
             "Cannot format currency without proper service registration. " +
             "Register ICurrencyFormatter in DI container and ensure store configuration is loaded.");
     }
@@ -77,7 +77,7 @@ private bool ValidateModificationPricing(string productId, IReadOnlyList<Modific
     if (_modificationService == null)
     {
         throw new InvalidOperationException(
-            "DESIGN DEFICIENCY: Modification service not registered. " +
+            "Modification service not registered. " +
             "Client cannot decide modification pricing rules. " +
             "Register IModificationService in DI container with store-specific business rules.");
     }
@@ -598,7 +598,7 @@ graph TB
 
 **Test Structure**:
 ```
-Tests use Microsoft.NET.Test.Sdk with xUnit framework:
+Tests use Microsoft.NET.Test.Sdk with Microsoft testing framework:
 - PosKernel.Tests/: Kernel layer testing
 - AiPos.Tests/: AI layer testing
 - Integration.Tests/: Cross-layer testing
@@ -610,7 +610,7 @@ Tests use Microsoft.NET.Test.Sdk with xUnit framework:
 ### Phase 1: Foundation and Kernel Layer
 1. **Project Structure Setup**
    - Create PosKernel/ and AiPos/ directory structure
-   - Set up test projects with Microsoft.NET.Test.Sdk and xUnit
+   - Set up test projects with Microsoft.NET.Test.Sdk and Microsoft testing framework
    - Configure solution and project dependencies
 
 2. **Kernel Extraction and Service Layer**
@@ -621,14 +621,14 @@ Tests use Microsoft.NET.Test.Sdk with xUnit framework:
 
 ### Phase 2: Store Extensions and Culture Framework
 1. **Store Extension Framework**
-   - Create culture-neutral interfaces and validation in PosKernel.Extensions.Core
-   - **Testing**: Multi-culture validation test suites
+    - Create culture-neutral interfaces and validation in PosKernel.Extensions.Core
+    - **Testing**: Multi-culture validation test suites
 
-2. **Demo Store Implementations**
-   - Implement Demo.PosKernel.FoodService.ToastBoleh (Singapore Kopitiam)
-   - Implement Demo.PosKernel.FoodService.StarGrounds (American Coffee Shop)
-   - Create culture-neutral currency formatting and localization services
-   - **Testing**: Culture-specific business rule validation
+2. **Unified FoodService Store Implementations**
+    - Single FoodService assembly supports multiple store profiles (e.g., Toast Boleh, Star Grounds) via `.xfer` configuration.
+    - Profiles provide: currency, culture, product & modifier catalogs, payment types, prompt pack references.
+    - Currency formatting and localization services are per-profile; fail-fast if missing.
+    - **Testing**: Culture-specific business rule validation across both profiles.
 
 ### Phase 3: AI Layer Implementation
 1. **AI Core Infrastructure**
@@ -642,7 +642,7 @@ Tests use Microsoft.NET.Test.Sdk with xUnit framework:
    - Build data tracking and analytics
    - **Testing**: Training effectiveness validation
 
-### Phase 4: Unified Agentic Interface
+### Phase 4: Unified Agentic Interface (MCP integration previously established)
 1. **Agentic Server Implementation**
    - Create unified agentic server for all agent operations
    - Implement tool categories: POS, Training, Development, System
@@ -650,10 +650,10 @@ Tests use Microsoft.NET.Test.Sdk with xUnit framework:
    - **Testing**: Agentic protocol compliance and functionality
 
 2. **Demo Applications**
-   - Create Demo.AiPos.Terminal TUI demonstration
-   - Create self-optimizing system demonstration
-   - Build comprehensive culture and functionality validation suite
-   - **Testing**: End-to-end agentic scenario validation
+    - Demo.AiPos.Terminal TUI (store selection + AI cashier)
+    - Demo.PosKernel.Terminal CLI (kernel-only deterministic driver)
+    - Build comprehensive culture and functionality validation suite
+    - **Testing**: End-to-end agentic scenario (AI + CLI + MCP tools)
 
 ## Deployment and Installation
 
@@ -700,6 +700,111 @@ install-demo.ps1         # Install/update demo stores and configurations
 3. **Backup Strategies**: Selective backup of transaction vs. training data
 4. **Compliance Support**: Easier audit trails with separated concerns
 5. **Development Velocity**: Rapid iteration during POC phase
+
+## Store Data & Schema Migration Strategy
+
+**Status**: Planned (integration beginning – legacy databases detected under user profile).
+**Legacy Paths**:
+```
+%USERPROFILE%\.poskernel\extensions\retail\SingaporeKopitiam\catalog\retail_catalog.db
+%USERPROFILE%\.poskernel\extensions\retail\CoffeeShop\catalog\retail_catalog.db
+```
+
+### Architectural Principles Applied
+- **Fail-Fast**: Application MUST refuse to start a store extension if required schema version is not satisfied or checksum mismatch is detected.
+- **No Silent Data Loss**: Every migration creates a timestamped backup copy before alteration.
+- **Deterministic Versioning**: Linear, integer version sequence (V1, V2, …) per store; no implicit diffs.
+- **Immutable History**: Applied script checksums stored; modifications to historical scripts produce a checksum mismatch and fail.
+
+### Versioning Model
+Migration scripts are embedded resources per store extension project:
+```
+Demo/PosKernel/Stores/FoodService/ToastBoleh/Data/Migrations/V1__InitialSchema.sql
+Demo/PosKernel/Stores/FoodService/ToastBoleh/Data/Migrations/V2__Add_Modifier_Groups.sql
+... etc.
+```
+Each script applied exactly once in ascending numeric order. A shared table records progress:
+```sql
+CREATE TABLE IF NOT EXISTS StoreSchemaVersion (
+    Version INTEGER NOT NULL PRIMARY KEY,
+    AppliedUtc TEXT NOT NULL,
+    Checksum TEXT NOT NULL,
+    ScriptName TEXT NOT NULL
+);
+```
+
+### Legacy Database Adoption (V0 Bootstrap)
+1. Detect absence of `StoreSchemaVersion` table ⇒ treat DB as legacy (implicit V0).
+2. Create backup: `retail_catalog.db.bak-YYYYMMDD-HHMMSS` (fail if copy fails).
+3. Introspect current schema:
+   - If matches expected new V1 schema (structure-only comparison), insert synthetic row representing V1 with computed checksum of canonical V1 script (bootstrap adoption – no destructive changes).
+   - Else run transformation script `V1__Baseline_Transform.sql` that reshapes tables to the canonical schema, then record version.
+4. Proceed with subsequent migrations (V2+).
+
+### Migration Execution Flow (Startup)
+1. Open connection (exclusive lock not required beyond transactional script execution; each script runs within a transaction).
+2. Ensure version table exists (create if legacy).
+3. Enumerate embedded scripts (sorted by version number).
+4. For each script where `Version > MAX(Version in StoreSchemaVersion)`: execute inside a transaction, compute SHA256 checksum of normalized script contents, record row.
+5. After completion, recompute checksums for applied versions; mismatch ⇒ throw with remediation guidance.
+
+### Safety & Failure Modes
+| Condition | Action |
+|-----------|--------|
+| Missing script for a gap (e.g., have V1 & V3 only) | Fail-fast (gaps disallowed) |
+| Checksum mismatch | Fail-fast with message: script tampered or out-of-sync; instruct to restore from backup or reapply canonical scripts |
+| Newer DB than extension (DB at 5, extension `RequiredSchemaVersion` 4) | Fail-fast: extension outdated, upgrade code required |
+| Read-only file system & pending migrations | Fail-fast with explicit permission guidance |
+| Partial script failure | Rollback transaction, abort startup |
+
+### Backup & Recovery
+Every migration run creates a compressed archive (optional future) or at minimum a copy of the original DB before the first pending script is applied. Restoration procedure documented in failure message.
+
+### Extension Interface Additions (Planned)
+```csharp
+public interface IStoreMigrationInfo
+{
+    int RequiredSchemaVersion { get; }
+    IReadOnlyList<StoreMigrationScript> GetScripts(); // (Version, Name, Stream, ChecksumPrecomputed?)
+}
+
+public sealed record StoreMigrationScript(int Version, string Name, Stream ContentStream);
+```
+The extension loader composes a `MigrationRunner` which performs the algorithm above before exposing the catalog.
+
+### PowerShell Migration Utility (Planned)
+`scripts/migrate-stores.ps1` options:
+```
+.\​migrate-stores.ps1 -Store SingaporeKopitiam -DryRun
+.\​migrate-stores.ps1 -All -Apply
+```
+Outputs table: Store, CurrentVersion, TargetVersion, Status.
+
+### Testing Strategy
+- Legacy adoption test: start with pre-populated DB lacking version table; expect bootstrap insert + no data loss.
+- Idempotency: running migrations twice produces no additional rows.
+- Tamper detection: alter an applied script file → mismatch exception.
+- Outdated extension simulation: manually increment DB version beyond extension; startup must fail.
+- Transformation path: feed DB with older/variance schema and verify `V1__Baseline_Transform.sql` normalizes it.
+
+### Status Matrix Integration
+Add row (below) to Appendix A to track implementation.
+
+### Rollout Sequence (Planned Alignment with Phases)
+- Incorporated at start of P1 (before modification pricing) so pricing logic relies on normalized schema.
+- Security (P2) will later rely on consistent schema to enforce RBAC around migration operations.
+
+### Failure Message Pattern
+```
+Store database not at required schema version.
+Store: SingaporeKopitiam
+Current: 1  Required: 3
+Pending: V2__Add_Modifier_Groups.sql, V3__Add_Tax_Rules.sql
+Remediation: Run migrate-stores.ps1 -Store SingaporeKopitiam -Apply or grant write access for automatic migration.
+Backup created: retail_catalog.db.bak-20251010-081500
+```
+
+---
 
 ## Key Architectural Decisions Made
 
@@ -774,3 +879,141 @@ We've captured the key architectural decisions but need to detail several critic
 - [ ] Create security monitoring and alerting systems
 
 **Current Status**: Security analysis complete, architecture revised for enterprise deployment. Critical security controls identified and designed. Ready for security-first implementation approach.
+
+## Appendix A: Staged Remediation & Implementation Tracker
+
+This appendix captures the staged remediation plan. It MUST be updated as phases progress. All phases preserve the architectural principles: fail-fast, culture neutrality, strict layering, and no silent defaults.
+
+### Phase Overview
+
+| Phase | Name | Objective | Exit Criteria |
+|-------|------|-----------|---------------|
+| P0 | Structural Guardrails | Eliminate hidden assumptions & placeholder shortcuts | Config provider, currency abstraction usage, pricing via catalog, parameter validator, initial AI tests |
+| P1 | Deterministic Store Integration | Real store config + modification pricing + prompt assets | End-to-end test with catalog & modifications; currency/time culture neutrality enforced |
+| P2 | Security & Governance | Role/capability model, audit, privacy, prompt safety | Unauthorized tool blocked; audit entries created |
+| P3 | Tool Ecosystem Maturation | Tool classes, schema validation, discovery | Reflection discovery passes; invalid param tests fail-fast |
+| P4 | Transports & Service Mode | NamedPipe + REST parity with direct client | Same test suite passes over all transports |
+| P5 | Operational Hardening | Health, metrics, install scripts, failure injection | Health tool + metrics + installer idempotency proven |
+| P6 | Extended AI & Training Loop | Training tools, optimization feedback | Training exemplar influences orchestrator config without breaking tests |
+
+### Status Matrix
+
+| Capability | Implemented | Notes |
+|------------|------------|-------|
+| Single-call orchestrator | ✅ | Heuristic keyword routing currently |
+| Catalog-based pricing | ✅ | Orchestrator no longer injects price; demo uses catalog |
+| Store configuration provider | ✅ | InMemory provider integrated (will evolve) |
+| Currency formatting via service | ✅ | Demo render path enforces formatter usage |
+| Parameter validation | ✅ | DirectToolExecutor validates & normalizes |
+| Tool categorization folders | ✅ | Scaffolded (all category directories with README) |
+| Security roles & capabilities | ❌ | Planned P2 |
+| Audit sink | ❌ | Planned P2 minimal, expanded P5 |
+| Privacy & sanitization | ❌ | Planned P2 |
+| Prompt asset configuration | ❌ | Planned P1 |
+| Modification pricing pipeline | ❌ | Planned P1 |
+| Store DB migrations | ⏳ | Migration infrastructure (interfaces + runner + basic tests) added; integration & real scripts pending |
+| NamedPipe transport | ❌ | Planned P4 |
+| REST transport | ❌ | Planned P4 |
+| Metrics / Health | ❌ | Planned P5 |
+| Training toolset | ❌ | Planned P6 |
+| Optimization loop | ❌ | Planned P6 |
+| Roslyn analyzer (hardcode scan) | ❌ | Future (post P3) |
+
+### P0 Detailed Tasks (Active Phase)
+
+1. Domain Type Canonicalization
+    - Confirm Money & identifier types exist only in one canonical location (PosKernel.Core Domain).
+    - Remove duplicates from Abstractions if present; update references.
+    - Add architectural comment at type definition: single source of truth.
+2. Store Configuration Provider
+    - Introduce `IStoreConfigurationProvider` exposing Currency, Culture, SupportedPaymentTypes.
+    - Fail-fast if requested before initialization.
+    - Replace hardcoded "USD" in orchestrator/demo path with provider-driven value.
+3. Currency Formatting Enforcement
+    - Ensure all display formatting calls a provided `ICurrencyFormatter` (no `.ToString("F2")`).
+    - Add fail-fast guard if formatter missing.
+4. Catalog-Based Pricing
+    - Replace placeholder unit price (0m or literals in AI tool handlers) with lookup via `IProductCatalog`.
+    - Fail-fast if product not found or price unresolved.
+5. Parameter Validation Layer
+    - Add `ToolParameterDescriptor` (Name, Type, Required, Min/Max optional) + validator.
+    - Orchestrator validates before execution; descriptive exception on first failure.
+6. Tool Categorization Scaffold
+    - Create directory structure for tool categories (POS only populated in P0; others stub with README or NotImplemented exceptions).
+7. Initial AI Test Project
+    - Add test project (AiPos.Orchestrator.Tests or unified AiPos.Tests if simpler) with tests:
+      * Missing config provider => fail-fast
+      * Add item success path (catalog price applied)
+      * Unknown product => descriptive failure
+8. Architecture Doc Sync
+    - Update Status Matrix as each P0 item completes.
+9. Build Hygiene
+    - Ensure zero warnings after each code addition (TreatWarningsAsErrors enforced).
+
+### P0 Acceptance Criteria
+
+| Criterion | Verification |
+|-----------|--------------|
+| No hardcoded currency in orchestrator/demo path | Grep search for "\"USD\"" returns only test data & docs |
+| Pricing always via catalog | Unit test asserts non-zero price equals catalog price |
+| Missing config fails fast | Test expects InvalidOperationException with remediation message |
+| Parameter validator active | Invalid param test throws with tool + param name |
+| Tool categories scaffolded | Directory structure exists under AiPos.Agentic/Tools |
+| Tests green & build clean | CI / local build shows 0 warnings |
+
+### Change Logging Rule
+Every phase advancement or task completion MUST: (a) update Status Matrix, (b) add brief note in DEV_LOG (if present), (c) ensure tests reflect new invariant.
+
+---
+Last Appendix Update: P0 core tasks implemented (config provider, pricing via catalog, currency formatting, parameter validation, tool folders, initial tests). Remaining: optional formatter test & DEV_LOG note.
+Maintainer: Architecture Working Set
+
+```
+## Prompt-Driven Lexicon Strategy (Supersedes Static Token Tables)
+
+ARCHITECTURAL DECISION: Do not embed static curated synonym/token tables for vernacular ordering (e.g., "kopi c kosong" or American espresso customization). Instead, the orchestrator supplies rich, profile-derived prompt context: products, modifiers (with applicability + conflicts), payment types, and illustrative mappings. The model's innate knowledge performs interpretation; every proposed product/modifier is validated by the store extension (fail-fast on unknowns).
+
+Rationale:
+- Eliminates drift between catalog data and hardcoded synonym lists.
+- Reduces maintenance when adding new products/modifiers (prompt context auto-updates from catalog).
+- Avoids regional bias baked into code; leverages model generalization while maintaining validation safety net.
+- Keeps architecture culture-neutral: only data + rules flow upward, not procedural parsing logic in the AI layer.
+
+Validation Workflow:
+1. User utterance → single `ProcessUtterance` AI call with prompt context (enumerated products, modifiers, conflicts, payment constraints).
+2. Tool output (structured JSON/actions) returned by orchestrator.
+3. Store extension validates each product & modifier and enforces conflicts/payment rules.
+4. Any invalid element invalidates the entire action set; guidance returned (no partial silent acceptance).
+
+Telemetry (future): counters for accepted vs rejected action sets; refine prompt examples rather than adding code-level lexicon tables.
+
+## Kernel-Only CLI (Phase 0.5 Diagnostic Driver)
+
+Purpose: Deterministic, non-AI path to exercise store profiles, pricing, modifier and payment rules.
+
+Commands (fail-fast, no implicit defaults):
+- `help` – list commands & syntax.
+- `stores` – list store profiles.
+- `use <storeId>` – activate profile (required before transactional commands).
+- `items [filter]` – list sellable items (optional substring filter).
+- `mods <productId>` – list modifiers applicable to a product (or all if supported when productId omitted in future).
+- `payments` – list payment types with capability flags (allowsChange, requiresExact, nonRefundable, etc.).
+- `new` – open new transaction (error if already open or profile not selected).
+- `add <productId> [qty]` – add line (qty default=1; must be >0).
+- `apply <line#> add <modId>[,<modId>...]` – apply modifiers.
+- `apply <line#> remove <modId>[,<modId>...]` – remove modifiers.
+- `void <line#>` – void individual line.
+- `voidtx` – void entire transaction.
+- `show` – display receipt & totals (currency via store `ICurrencyFormatter`).
+- `pay <amount> <paymentType>` – tender payment. If payment type disallows change and amount > due → fail-fast.
+- `close` – close session (if supported).
+
+Design Constraints:
+- CLI must not perform pricing or currency logic beyond delegating to kernel & store services.
+- Unknown commands produce descriptive error referencing `help`.
+- Payment semantics (e.g., disallow change) enforced by store extension validation layer.
+
+MCP Parity: MCP tool surface mirrors these deterministic operations plus `processUtterance` for the AI path; avoids divergence.
+
+// ARCHITECTURAL PRINCIPLE: CLI is diagnostic; all business rules live in store extensions + kernel (fail-fast on missing services).
+```
