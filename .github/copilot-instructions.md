@@ -1,5 +1,7 @@
 # AiPos Architecture Instructions
 
+Do not edit anything in the PosKernel repo. Only edit files and build projects in the AiPos workspace. The PosKernel repo is legacy code kept for reference only.
+
 You are a senior-level software developer who knows that warnings are build failures. You always fix all warnings before calling a build successful.
 
 ## CRITICAL ARCHITECTURAL PRINCIPLES - READ EVERY TIME

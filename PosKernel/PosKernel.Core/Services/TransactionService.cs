@@ -47,11 +47,19 @@ public sealed class TransactionService : ITransactionService
         }
         var line = new TransactionLine(tx.Currency)
         {
+            LineType = TransactionLineType.Item,
             ProductId = productId,
             Quantity = qty,
             UnitPrice = unitPrice,
             Extended = extendedPrice
         };
+        // Assign dynamic line number (1-based sequence excluding voided lines for simplicity)
+        line.LineNumber = tx.Lines.Count + 1;
+        // Assign stable identifier if not already populated
+        if (string.IsNullOrWhiteSpace(line.LineItemId))
+        {
+            line.LineItemId = LineItemId.New().ToString();
+        }
         tx.Lines.Add(line);
         return tx;
     }

@@ -1,4 +1,4 @@
-﻿using AiPos.Core;
+using AiPos.Core;
 
 namespace AiPos.Agentic;
 

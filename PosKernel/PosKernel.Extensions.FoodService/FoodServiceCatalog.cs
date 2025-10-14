@@ -9,21 +9,20 @@ using System.Threading.Tasks;
 namespace PosKernel.Extensions.FoodService;
 
 /// <summary>
-/// SQLite-backed catalog for Kopitiam / FoodService stores.
-/// ARCHITECTURAL PRINCIPLE: Reads existing legacy retail_catalog.db without copying or transforming data.
-/// Fail-fast on any structural or connectivity issue.
+/// SQLite-backed catalog for generic FoodService stores (formerly KopitiamCatalog).
+/// ARCHITECTURAL PRINCIPLE: Culture-neutral data access. Fails fast on structural or connectivity issues.
 /// </summary>
-public sealed class KopitiamCatalog : IProductCatalog
+public sealed class FoodServiceCatalog : IProductCatalog
 {
     private readonly string _connectionString;
     private readonly string _storeId;
 
-    public KopitiamCatalog(string storeId, string connectionString)
+    public FoodServiceCatalog(string storeId, string connectionString)
     {
         _storeId = storeId ?? throw new ArgumentNullException(nameof(storeId));
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("Connection string required for KopitiamCatalog");
+            throw new InvalidOperationException("Connection string required for FoodServiceCatalog");
         }
         _connectionString = NormalizeConnectionString(connectionString);
         // Fail-fast existence check for file-based Data Source
@@ -32,7 +31,7 @@ public sealed class KopitiamCatalog : IProductCatalog
             var path = _connectionString.Substring("Data Source=".Length).Trim();
             if (!File.Exists(path))
             {
-                throw new InvalidOperationException($"Kopitiam catalog database not found at {path}");
+                throw new InvalidOperationException($"Food service catalog database not found at {path}");
             }
         }
     }
@@ -103,7 +102,7 @@ public sealed class KopitiamCatalog : IProductCatalog
         }
         catch
         {
-            // Fallback: if legacy column name base_price_cents present instead of base_price
+            // Legacy fallback if schema uses cents
             try
             {
                 if (!r.IsDBNull(4))

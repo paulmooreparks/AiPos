@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"name": "AiPos",
+			"path": "."
+		},
+		{
+			"name": ".aipos",
+			"path": "../../../.aipos"
+		},
+		{
+			"name": ".poskernel",
+			"path": "../../../.poskernel"
+		},
+		{
+			"path": "../PosKernel"
+		}
+	],
+	"settings": {
+		"powershell.cwd": "PosKernel"
+	}
+}

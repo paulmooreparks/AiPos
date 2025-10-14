@@ -1017,3 +1017,26 @@ MCP Parity: MCP tool surface mirrors these deterministic operations plus `proces
 
 // ARCHITECTURAL PRINCIPLE: CLI is diagnostic; all business rules live in store extensions + kernel (fail-fast on missing services).
 ```
+## Legacy PosKernel Reference (Quarantined)
+
+The original PosKernel repository is deprecated and must not be built or executed inside this workspace. We maintain a quarantined, read-only snapshot strictly for forensic reference.
+
+Architectural Rationale:
+- Preserve historical implementation details for auditing decisions
+- Prevent accidental reintroduction of obsolete patterns
+- Enforce the single-source-of-truth: all active kernel evolution happens here under AiPos
+
+Mechanism:
+- Directory: `.legacy-poskernel/` (gitignored)
+- Population Script: `./scripts/sync-legacy-poskernel.ps1` (clones specified ref, strips build artifacts & VCS metadata, records manifest)
+- Manifest: `.legacy-poskernel/MANIFEST.json` captures commit metadata + integrity hash
+
+Usage Rules:
+1. Never compile or run code from `.legacy-poskernel`.
+2. Do not copy code verbatim without architectural review; prefer re-deriving patterns aligned with current principles.
+3. If you need a different branch/tag: `pwsh ./scripts/sync-legacy-poskernel.ps1 -Ref someTag`.
+4. If a required concept exists only in legacy code, reference it by MANIFEST commit SHA in design docs when porting.
+
+Fail-Fast Guard (Human Policy): Any PR that adds legacy files outside `.legacy-poskernel/` must be rejected.
+
+This separation ensures clarity between actively supported kernel code and historical artifacts, reducing cognitive load and avoiding the confusion that arises from parallel solution files (e.g., the removed `PosKernel.sln`).

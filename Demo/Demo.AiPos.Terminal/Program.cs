@@ -32,7 +32,7 @@ public static class Program
 
         var sessionManager = new SessionManager();
         var txService = new TransactionService();
-        IKernelEngine engine = new KernelEngine(sessionManager, txService);
+    IKernelEngine engine = new KernelEngine(sessionManager, txService, new DefaultPaymentRules());
         IKernelClient kernelClient = new DirectKernelClient(engine);
         var sessionId = await kernelClient.CreateSessionAsync("TERM1", "OP1");
 
@@ -84,7 +84,7 @@ public static class Program
                 var validation = await store.Catalog.ValidateProductAsync(productId, ct);
                 if (!validation.IsValid || validation.Product == null) { return $"Product invalid: {validation.ErrorMessage}"; }
                 decimal unitPrice = validation.Product.BasePrice; // Mods pricing deferred (P1)
-                current = await kernelClient.AddLineItemAsync(sessionId, TxId(), productId, qty, unitPrice, validation.Product.Name, validation.Product.Description, ct);
+                current = await kernelClient.AddLineItemAsync(sessionId, TxId(), productId, qty, unitPrice, validation.Product.Name, validation.Product.Description, null, ct);
                 return Render();
             }),
             ("pay", async (p, ct) => { EnsureActive(); var amount = Convert.ToDecimal(p["amount"]); current = await kernelClient.ProcessPaymentAsync(sessionId, TxId(), amount, "cash", ct); return Render(); }),

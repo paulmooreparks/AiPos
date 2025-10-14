@@ -14,9 +14,11 @@ public interface IKernelClient
     /// <summary>Start a transaction.</summary>
     Task<TransactionResult> StartTransactionAsync(string sessionId, string currency, CancellationToken cancellationToken = default);
     /// <summary>Add an item.</summary>
-    Task<TransactionResult> AddLineItemAsync(string sessionId, string transactionId, string productId, int quantity, decimal unitPrice, string? productName = null, string? productDescription = null, CancellationToken cancellationToken = default);
+    Task<TransactionResult> AddLineItemAsync(string sessionId, string transactionId, string productId, int quantity, decimal unitPrice, string? productName = null, string? productDescription = null, string? parentLineItemId = null, CancellationToken cancellationToken = default);
+    /// <summary>Void a line (and cascaded modifier children) by stable line id.</summary>
+    Task<TransactionResult> VoidLineItemAsync(string sessionId, string transactionId, string lineItemId, string? reason = null, CancellationToken cancellationToken = default);
     /// <summary>Process payment.</summary>
-    Task<TransactionResult> ProcessPaymentAsync(string sessionId, string transactionId, decimal amount, string paymentType = "cash", CancellationToken cancellationToken = default);
+    Task<TransactionResult> ProcessPaymentAsync(string sessionId, string transactionId, decimal amount, string paymentType, CancellationToken cancellationToken = default);
     /// <summary>Get transaction snapshot.</summary>
     Task<TransactionResult> GetTransactionAsync(string sessionId, string transactionId, CancellationToken cancellationToken = default);
     /// <summary>Close session.</summary>

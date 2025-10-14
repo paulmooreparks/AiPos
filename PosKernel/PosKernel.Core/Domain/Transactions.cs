@@ -21,10 +21,27 @@ public enum TransactionState
 }
 
 /// <summary>
+/// Line classification aligned with NRF concepts: Item (sale), Tender (payment instrument), Change (cash returned).
+/// </summary>
+public enum TransactionLineType
+{
+    /// <summary>Merchandise (sale) line – contributes to transaction Total.</summary>
+    Item = 0,
+    /// <summary>Tender (payment instrument) line – contributes to cumulative Tendered.</summary>
+    Tender = 1,
+    /// <summary>Change returned to customer (cash out) – contributes to ChangeDue.</summary>
+    Change = 2
+}
+
+/// <summary>
 /// Display/model representation of a line item – calculations happen in engine, not here.
 /// </summary>
 public sealed class TransactionLine
 {
+    /// <summary>Classifies the purpose of the line (Item merchandise vs Tender vs Change).</summary>
+    public TransactionLineType LineType { get; set; } = TransactionLineType.Item;
+    /// <summary>Payment/tender kind (e.g., cash, card) when LineType is Tender or Change.</summary>
+    public string? TenderType { get; set; }
     /// <summary>Stable identifier (empty until assigned).</summary>
     public LineItemId LineId { get; init; } = new LineItemId(Guid.Empty);
     /// <summary>Assigned stable id string (preferred over line number).</summary>
@@ -86,6 +103,8 @@ public sealed class Transaction
     public Money Tendered { get; set; }
     /// <summary>Change due.</summary>
     public Money ChangeDue { get; set; }
+    /// <summary>Remaining balance due (Total - Tendered + ChangeDue). Zero only when fully settled. Not part of legacy ARTS core schema but aligns with common POS extensions providing running amount due.</summary>
+    public Money BalanceDue { get; set; }
     /// <summary>Create a transaction for a currency.</summary>
     public Transaction(string currency)
     {
@@ -93,6 +112,7 @@ public sealed class Transaction
         Total = Money.Zero(currency);
         Tendered = Money.Zero(currency);
         ChangeDue = Money.Zero(currency);
+        BalanceDue = Money.Zero(currency);
     }
     /// <summary>Apply kernel-calculated totals and state.</summary>
     public void UpdateFromKernel(Money total, Money tendered, Money changeDue, TransactionState state)
@@ -101,6 +121,8 @@ public sealed class Transaction
         Tendered = tendered;
         ChangeDue = changeDue;
         State = state;
+        // ARCHITECTURAL PRINCIPLE: BalanceDue derived—not client computed.
+        BalanceDue = new Money(total.Amount - tendered.Amount + changeDue.Amount, total.Currency);
     }
 }
 

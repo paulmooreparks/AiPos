@@ -28,11 +28,19 @@ public sealed class DirectKernelClient : IKernelClient
         => _engine.StartTransactionAsync(sessionId, currency, cancellationToken);
 
     /// <inheritdoc />
-    public Task<TransactionResult> AddLineItemAsync(string sessionId, string transactionId, string productId, int quantity, decimal unitPrice, string? productName = null, string? productDescription = null, CancellationToken cancellationToken = default)
-        => _engine.AddLineItemAsync(sessionId, transactionId, productId, quantity, unitPrice, productName, productDescription, cancellationToken);
+    public Task<TransactionResult> AddLineItemAsync(string sessionId, string transactionId, string productId, int quantity, decimal unitPrice, string? productName = null, string? productDescription = null, string? parentLineItemId = null, CancellationToken cancellationToken = default)
+        => _engine.AddLineItemAsync(sessionId, transactionId, productId, quantity, unitPrice, productName, productDescription, parentLineItemId, cancellationToken);
+
+    /// <summary>
+    /// Void a line item (and its linked modifier descendants) via underlying kernel engine.
+    /// ARCHITECTURAL PRINCIPLE: Client performs no math – delegates cascade + totals integrity to kernel.
+    /// </summary>
+    /// <inheritdoc />
+    public Task<TransactionResult> VoidLineItemAsync(string sessionId, string transactionId, string lineItemId, string? reason = null, CancellationToken cancellationToken = default)
+        => _engine.VoidLineItemAsync(sessionId, transactionId, lineItemId, reason, cancellationToken);
 
     /// <inheritdoc />
-    public Task<TransactionResult> ProcessPaymentAsync(string sessionId, string transactionId, decimal amount, string paymentType = "cash", CancellationToken cancellationToken = default)
+    public Task<TransactionResult> ProcessPaymentAsync(string sessionId, string transactionId, decimal amount, string paymentType, CancellationToken cancellationToken = default)
         => _engine.ProcessPaymentAsync(sessionId, transactionId, amount, paymentType, cancellationToken);
 
     /// <inheritdoc />

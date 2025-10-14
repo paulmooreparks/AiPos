@@ -70,7 +70,7 @@ internal static class Program
 	{
 		var sessionManager = new SessionManager();
 		var txService = new TransactionService();
-		IKernelEngine engine = new KernelEngine(sessionManager, txService);
+		IKernelEngine engine = new KernelEngine(sessionManager, txService, new DefaultPaymentRules());
 		_kernelClient = new DirectKernelClient(engine);
 		_sessionId = _kernelClient.CreateSessionAsync("TUI", "OP1").GetAwaiter().GetResult();
 
@@ -95,7 +95,7 @@ internal static class Program
 				var val = await _store.Catalog.ValidateProductAsync(sku, ct);
 				if (!val.IsValid || val.Product == null) { return $"Invalid product: {val.ErrorMessage}"; }
 				var unit = val.Product.BasePrice;
-				_current = await _kernelClient.AddLineItemAsync(_sessionId, TxId(), sku, qty, unit, val.Product.Name, val.Product.Description, ct);
+				_current = await _kernelClient.AddLineItemAsync(_sessionId, TxId(), sku, qty, unit, val.Product.Name, val.Product.Description, null, ct);
 				return Render();
 			}),
 			("pay", async (p, ct) => {

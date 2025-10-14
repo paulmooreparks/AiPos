@@ -55,7 +55,7 @@ public class OrchestratorBasicTests
     {
         var sessionManager = new SessionManager();
         var txService = new TransactionService();
-        IKernelEngine engine = new KernelEngine(sessionManager, txService);
+    IKernelEngine engine = new KernelEngine(sessionManager, txService, new DefaultPaymentRules());
         IKernelClient kernelClient = new DirectKernelClient(engine);
         var session = kernelClient.CreateSessionAsync("TERM1", "OP1").GetAwaiter().GetResult();
 
@@ -80,7 +80,7 @@ public class OrchestratorBasicTests
             {
                 return "Product invalid: " + valid.ErrorMessage;
             }
-            current = await kernelClient.AddLineItemAsync(session, current.Transaction.Id.ToString(), id, qty, valid.Product.BasePrice, valid.Product.Name, valid.Product.Description, ct);
+            current = await kernelClient.AddLineItemAsync(session, current.Transaction.Id.ToString(), id, qty, valid.Product.BasePrice, valid.Product.Name, valid.Product.Description, null, ct);
             return "ADDED";
         }));
         IToolExecutor exec = new DirectToolExecutor(toolDefs, handlers);
@@ -123,7 +123,7 @@ public class OrchestratorBasicTests
     {
         var sessionManager = new SessionManager();
         var txService = new TransactionService();
-        IKernelEngine engine = new KernelEngine(sessionManager, txService);
+    IKernelEngine engine = new KernelEngine(sessionManager, txService, new DefaultPaymentRules());
         IKernelClient kernelClient = new DirectKernelClient(engine);
         var session = kernelClient.CreateSessionAsync("TERM1", "OP1").GetAwaiter().GetResult();
         var toolDefs = new List<ToolDefinition>
